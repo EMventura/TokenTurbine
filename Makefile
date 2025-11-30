@@ -9,36 +9,45 @@
 help:
 	@echo "TokenTurbine - Available Commands:"
 	@echo ""
+	@echo "  make download-data - Download the input dataset"
 	@echo "  make build       - Build the Docker image"
 	@echo "  make run         - Run the pipeline with default config"
-	@echo "  make run-test    - Run pipeline with test config (small sample)"
 	@echo "  make shell       - Open a shell in the container"
 	@echo "  make logs        - View pipeline logs"
 	@echo "  make stop        - Stop running containers"
 	@echo "  make clean       - Remove containers and images"
 	@echo "  make clean-data  - Clean processed data (WARNING: deletes outputs)"
-	@echo "  make test        - Run tests (if implemented)"
 	@echo ""
+
+# Download input dataset
+download-data:
+	@echo "Downloading input dataset..."
+	@chmod +x scripts/download_data.sh
+	@./scripts/download_data.sh
 
 # Build the Docker image
 build:
 	@echo "Building TokenTurbine Docker image..."
 	docker-compose build
 
+# Check if data exists before running
+check-data:
+	@if [ ! -f data/raw/mainpipe_data_v1.jsonl ]; then \
+		echo "❌ Data file not found: data/raw/mainpipe_data_v1.jsonl"; \
+		echo ""; \
+		echo "Please run one of:"; \
+		echo "  make download-data  (to download sample dataset)"; \
+		echo "  OR"; \
+		echo "  cp your-data.jsonl data/raw/mainpipe_data_v1.jsonl"; \
+		echo ""; \
+		exit 1; \
+	fi
+	@echo "✅ Data file found"
+
 # Run the pipeline with default config
 run:
 	@echo "Running TokenTurbine pipeline..."
 	docker-compose up
-
-# Run pipeline with test config
-run-test:
-	@echo "Running TokenTurbine with test config..."
-	docker-compose run --rm pipeline --config configs/test.yaml
-
-# Run with custom config
-run-custom:
-	@read -p "Enter config path (e.g., configs/custom.yaml): " config; \
-	docker-compose run --rm pipeline --config $$config
 
 # Open interactive shell in container
 shell:
@@ -69,11 +78,6 @@ clean-data:
 	else \
 		echo "Cancelled."; \
 	fi
-
-# Run tests (placeholder)
-test:
-	@echo "Running tests..."
-	docker-compose run --rm pipeline pytest tests/ || echo "No tests found"
 
 # Quick validation (check if container runs)
 validate:
