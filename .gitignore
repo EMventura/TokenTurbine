@@ -3,6 +3,28 @@ __pycache__/
 *.py[codz]
 *$py.class
 
+# Environments
+.env
+.envrc
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Data 
+data/
+*.jsonl
+*.parquet
+
+# Logs
+logs/
+*.log
+
+# Ray
+/tmp/
+
 # C extensions
 *.so
 
@@ -133,16 +155,6 @@ celerybeat.pid
 
 # SageMath parsed files
 *.sage.py
-
-# Environments
-.env
-.envrc
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
 
 # Spyder project settings
 .spyderproject

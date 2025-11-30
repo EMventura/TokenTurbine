@@ -1,0 +1,14 @@
+version: '1.0'
+
+services:
+  pipeline:
+    build: .
+    container_name: tokenturbine_runner
+    volumes:
+      # Mount your local 'data' folder to '/app/data' in the container
+      # This allows the container to read your inputs and write outputs to your disk
+      - ./data:/app/data
+    environment:
+      - RAY_ADDRESS=local
+    # Override command if needed, or use default
+    command: ["--config", "configs/base.yaml"]
