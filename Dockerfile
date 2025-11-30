@@ -36,8 +36,12 @@ RUN mkdir -p data/ && \
 RUN chmod -R 755 data/
 
 # Create data directories to avoid permission issues
-RUN mkdir -p data/raw data/processed data/reports data/checkpoints data/processed/tokenized
+RUN mkdir -p data/raw data/processed data/reports data/processed/tokenized
 
+# Download the raw data file and place it in the data/raw directory.
+RUN echo "Downloading raw data..." && \
+    curl -L "https://s3.us-east-1.amazonaws.com/mainpipe.maincode.com/mainpipe_data_v1.jsonl" -o data/raw/mainpipe_data_v1.jsonl && \
+    echo "Download complete."
 
 # Default command
 ENTRYPOINT ["python", "src/main.py"]
