@@ -10,6 +10,17 @@ services:
       - ./data:/app/data
       - ./data/reports:/app/data/reports
     environment:
-      - RAY_ADDRESS=local
+      - RAY_ADDRESS=auto # or local?
+      - PYTHONUNBUFFERED=1
+
+    # Shared memory (important for Ray)
+    shm_size: '2gb'
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 6G
     # Override command if needed, or use default
     command: ["--config", "configs/base.yaml"]

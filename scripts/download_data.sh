@@ -12,19 +12,15 @@ DATA_URL="https://s3.us-east-1.amazonaws.com/mainpipe.maincode.com/mainpipe_data
 OUTPUT_DIR="data/raw"
 OUTPUT_FILE="$OUTPUT_DIR/mainpipe_data_v1.jsonl"
 
-# Colors for output
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-NC='\033[0m' # No Color
-
-echo -e "${GREEN}TokenTurbine Data Download${NC}"
 echo "================================"
+echo "TokenTurbine - Data Download"
+echo "================================"
+echo ""
 
 # Check if file already exists
 if [ -f "$OUTPUT_FILE" ]; then
-    echo -e "${YELLOW}Data file already exists at: $OUTPUT_FILE${NC}"
-    read -p "Do you want to re-download? (y/n) " -n 1 -r
+    echo "⚠️  Data file already exists at: $OUTPUT_FILE"
+    read -p "Do you want to re-download? (y/n): " -n 1 -r
     echo
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
         echo "Skipping download."
@@ -37,7 +33,7 @@ echo "Creating directory: $OUTPUT_DIR"
 mkdir -p "$OUTPUT_DIR"
 
 # Download the file
-echo -e "${GREEN}Downloading dataset...${NC}"
+echo "Downloading dataset..."
 echo "Source: $DATA_URL"
 echo "Destination: $OUTPUT_FILE"
 echo ""
@@ -48,7 +44,8 @@ if command -v curl &> /dev/null; then
 elif command -v wget &> /dev/null; then
     wget --show-progress "$DATA_URL" -O "$OUTPUT_FILE"
 else
-    echo -e "${RED}Error: Neither curl nor wget found. Please install one of them.${NC}"
+    echo "❌ Error: Neither curl nor wget found."
+    echo "Please install curl or wget and try again."
     exit 1
 fi
 
@@ -58,13 +55,15 @@ if [ -f "$OUTPUT_FILE" ]; then
     LINE_COUNT=$(wc -l < "$OUTPUT_FILE")
     
     echo ""
-    echo -e "${GREEN}✓ Download complete!${NC}"
+    echo "================================"
+    echo "✅ Download complete!"
+    echo "================================"
     echo "File: $OUTPUT_FILE"
     echo "Size: $FILE_SIZE"
-    echo "Documents: $LINE_COUNT"
+    echo "Documents: $(printf "%'d" $LINE_COUNT)"
     echo ""
-    echo -e "${GREEN}You can now run: make run${NC}"
 else
-    echo -e "${RED}✗ Download failed!${NC}"
+    echo ""
+    echo "❌ Download failed!"
     exit 1
 fi
