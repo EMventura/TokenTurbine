@@ -29,9 +29,6 @@ except ImportError:
 
 logger = logging.getLogger("TokenTurbine")
 
-# Pre-compile control character regex (much faster than category checks)
-# CONTROL_CHARS_RE = re.compile(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]')
-
 class IngestionWorker:
     """
     Worker Actor that handles the actual data ingestion and cleaning logic.
@@ -148,8 +145,7 @@ class IngestionWorker:
             char for char in text 
             if unicodedata.category(char)[0] != 'C' or char in '\n\t'
         )
-        # text = CONTROL_CHARS_RE.sub('', text)
-        
+    
         # 4. Whitespace Normalization (Refined)
         # Replace non-breaking spaces with standard space
         text = text.replace('\u00a0', ' ')
@@ -173,23 +169,6 @@ class IngestionWorker:
         text = re.sub(r'[ \t]+', ' ', text)
 
         return text.strip()
-
-        # lines = []
-        # for line in text.split('\n'):
-        #     stripped = line.strip()
-        #     if stripped:  # Only keep non-empty lines
-        #         lines.append(stripped)
-        
-        # # Join with single newlines
-        # text = '\n'.join(lines)
-        
-        # # Replace 3+ newlines with 2 (standardize paragraph breaks)
-        # text = re.sub(r'\n{3,}', '\n\n', text)
-        
-        # # Final cleanup: multiple spaces within a line
-        # text = re.sub(r' {2,}', ' ', text)
-        
-        # return text.strip()
 
     def __call__(self, batch: pa.Table) -> pa.Table:
         if 'text' not in batch.column_names:
