@@ -1,0 +1,39 @@
+# Core Distributed Compute
+# 'default' installs the dashboard, 'data' installs the streaming engine
+ray[default,data]>=2.9.0
+
+# Data Processing & Types
+pyarrow>=14.0.0
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Data Normalization & Cleaning
+beautifulsoup4>=4.12.0
+lxml>=4.9.0              # Parser for BeautifulSoup (faster than html.parser)
+html5lib>=1.1            # Alternative parser for malformed HTML
+
+# Hashing & Algorithms
+xxhash>=3.4.1         # High-speed non-cryptographic hashing
+datasketch>=1.6.4     # For MinHash LSH (Step 3)
+
+# Machine Learning & Tokenization
+# Note: fasttext-wheel is much easier to install than raw 'fasttext'
+fasttext-wheel>=0.9.2 
+
+# Tokenization
+tiktoken>=0.7.0       
+
+# Configuration & Utils
+pyyaml>=6.0.1
+requests>=2.31.0  # Helpful if you need to download data via script
+
+# Optional: Monitoring & Profiling (uncomment if needed)
+# psutil>=5.9.0          # System resource monitoring
+# py-spy>=0.3.14         # Performance profiling
+
+# Optional: Progress bars (recommended for better UX)
+tqdm>=4.66.0             # Progress bars for Ray Data
+
+# Testing (if you add tests)
+# pytest>=7.4.0
+# pytest-cov>=4.1.0

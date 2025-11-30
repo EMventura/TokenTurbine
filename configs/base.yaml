@@ -1,0 +1,114 @@
+# -----------------------------------------------------------------------------
+# TOKENTURBINE CONFIGURATION
+# -----------------------------------------------------------------------------
+project:
+  name: "tokenturbine"
+  version: "1.0.0"
+  seed: 42  # Fixed seed for reproducibility (critical for debugging)
+
+# -----------------------------------------------------------------------------
+# SYSTEM & RAY RESOURCES
+# -----------------------------------------------------------------------------
+system:
+  ray_address: null  # Ray detects you are on a single machine and spins up a temporary mini-cluster in the background just for your script.
+  num_cpus: null       # null = use all available cores
+  logging_level: "INFO"
+
+# -----------------------------------------------------------------------------
+# PIPELINE OPTIONS
+# -----------------------------------------------------------------------------
+# Enable counting between stages (set to false for very large datasets)
+compute_counts: true
+
+# -----------------------------------------------------------------------------
+# DATA PATHS
+# -----------------------------------------------------------------------------
+paths:
+  # The raw input file provided in the prompt
+  input_file: "data/raw/mainpipe_data_v1.jsonl"
+  
+  # Final output file 
+  output_file: "data/processed/cleaned_dataset.jsonl"
+
+  # Where intermediate Ray checkpoints or Parquet files go
+  processed_dir: "data/processed/tokenized/"
+  
+  # Where the final inspection reports (histograms, logs) go
+  reports_dir: "data/reports/"
+
+# -----------------------------------------------------------------------------
+# PIPELINE STEPS
+# -----------------------------------------------------------------------------
+
+# STEP 1: INGESTION
+ingestion:
+  input_path: "data/raw/mainpipe_data_v1.jsonl"
+  min_text_length: 100 
+  
+  # Ray Processing Hint: 
+  # 2000 docs * 1.7KB avg size ~= 3.4MB per batch. 
+  # This is small/safe enough to prevent OOM on any laptop.
+  batch_size: 2000
+  normalize_text: true # Enable HTML cleaning and normalization
+  
+  # Filter out code-like content
+  filter_code: true
+
+# STEP 2: FILTERING (Language & Quality)
+filtering:
+  enabled: true
+  # Path to the downloaded binary file
+  language_model_path: "data/lid.176.bin" 
+  # FastText output format for English
+  target_language: "__label__en" 
+  # Confidence threshold (0.65 is conservative, 0.4 is usually enough for 'en')
+  min_lang_score: 0.65 
+  # Drop text if > 30% of characters are punctuation/symbols
+  max_punc_ratio: 0.3
+  # Number of first characters used to predict language
+  sample_chars_for_langid: 1000
+   # --- NEW PII SETTINGS ---
+  enable_pii: true
+  # "redact" replaces with <EMAIL>, "drop" discards the whole document
+  pii_action: "redact" 
+  # --- NEW TOXICITY SETTINGS ---
+  enable_toxicity: true
+  # Add real toxic words here. 
+  # Allow 1 toxic word per 1000 words (0.1%).
+  max_toxic_ratio: 0.001
+  toxic_words:
+    - "nigger"
+    - "nigga"
+    - "chink"
+    - "kike"
+    - "fag"
+    - "faggot"
+    - "tranny"
+    - "retard"
+    - "spic"
+    - "wetback"
+    - "gook"
+    - "cunt"
+
+# STEP 3: DEDUPLICATION
+deduplication:
+  enabled: true
+  num_perm: 128 # Number of permutations for MinHash (higher = more accurate but slower)
+  threshold: 0.85 # Jaccard similarity threshold (0.85 is standard for "near dupes")
+  ngram_size: 5
+  seed: 42
+  max_lsh_items: 1000000
+  
+# STEP 4: TOKENIZATION 
+tokenization:
+  enabled: false
+  # 'gpt2' is the standard open source tokenizer. 
+  # For newer models use 'cl100k_base' (GPT-4) or specific HF paths
+  tokenizer_model: "gpt2"
+  # Setting this true for challenge requirement, otherwise set to false for production to save space
+  keep_text: false 
+  export_format: "parquet"
+  output_path: "data/processed/tokenized"
+  # Truncate docs longer than this (standard context window)
+  max_length: 2048 
+  add_special_tokens: false
