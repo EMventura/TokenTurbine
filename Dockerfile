@@ -26,6 +26,11 @@ COPY src/ ./src/
 COPY configs/ ./configs/
 # We do NOT copy data/ here. We mount it at runtime.
 
+# --- Entrypoint Setup ---
+# Copy the entrypoint script and make it executable
+COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
 # Download FastText language model (critical for pipeline)
 # This ensures the model is baked into the image
 RUN mkdir -p data/ && \

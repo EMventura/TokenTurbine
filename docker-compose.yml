@@ -3,11 +3,12 @@ version: '3.8'
 services:
   pipeline:
     build: .
-    container_name: tokenturbine_runner
+    container_name: tokenturbine_pipeline
     volumes:
       # Mount your local 'data' folder to '/app/data' in the container
       # This allows the container to read your inputs and write outputs to your disk
       - ./data:/app/data
+      - ./data/reports:/app/data/reports
     environment:
       - RAY_ADDRESS=local
     # Override command if needed, or use default
