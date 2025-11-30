@@ -48,8 +48,6 @@ ls -lh data/processed/cleaned_dataset.jsonl
 
 ## Installation
 
-### Option 1: Docker (Recommended)
-
 ```bash
 # Clone the repository
 git clone https://github.com/EMventura/TokenTurbine.git
@@ -60,25 +58,6 @@ make build
 
 # Verify installation
 make validate
-```
-
-### Option 2: Local Environment
-
-```bash
-# Create virtual environment
-python3.10 -m venv venv
-source venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Download FastText language model
-cd data
-wget https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.bin
-cd ..
-
-# Run pipeline
-python src/main.py --config configs/base.yaml
 ```
 
 ---
@@ -100,7 +79,7 @@ docker-compose up -d
 
 ---
 
-## ⚙️ Configuration
+## Configuration
 
 Edit `configs/base.yaml` to customize the pipeline:
 
@@ -165,13 +144,13 @@ See `configs/base.yaml` for all available options.
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 TokenTurbine/
 ├── src/
 │   ├── main.py                 # Pipeline orchestrator
-│   ├── data_load2.py           # Ingestion stage
+│   ├── data_load.py            # Ingestion stage
 │   ├── filtering.py            # Quality filtering
 │   ├── deduplication.py        # Dedup stage
 │   ├── tokenization.py         # Tokenization stage
@@ -187,7 +166,6 @@ TokenTurbine/
 │   └── reports/                # Metrics (future)
 ├── Dockerfile                  # Container definition
 ├── docker-compose.yml          # Container orchestration
-├── docker-compose.dev.yml      # Development overrides
 ├── requirements.txt            # Python dependencies
 ├── Makefile                    # Helper commands
 └── README.md                   # This file
@@ -251,7 +229,7 @@ Run `make help` to see all available commands.
 
 ---
 
-## 🔬 Advanced Usage
+## Advanced Usage
 
 ### Custom Configurations
 
@@ -355,9 +333,8 @@ Built with:
 ## Contact
 
 For questions or issues:
-- Open an issue on GitHub
-- Check existing issues for solutions
 - Review troubleshooting section above
+- Open an issue on GitHub
 
 ---
 
