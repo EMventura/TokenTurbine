@@ -1,19 +1,17 @@
 # TokenTurbine
-An end-to-end data pipeline for LLM pre-training. TokenTurbine ingests a sample of unprepared data, cleans and normalizes text, performs deduplication and quality filtering, and outputs a training-ready dataset. Built with Ray for distributed processing.
+An end-to-end data pipeline for LLM pre-training. TokenTurbine ingests a sample of unprepared data, cleans and normalizes text, performs deduplication and quality filtering, and outputs a training-ready dataset. The default dataset can be downloaded from ([here](https://s3.us-east-1.amazonaws.com/mainpipe.maincode.com/mainpipe_data_v1.jsonl)). Built with Ray for distributed processing.
 
-##  What is TokenTurbine?
+###  Pipeline stages:
 
-TokenTurbine is an end-to-end data preparation pipeline that transforms raw, noisy web text into clean, deduplicated, tokenized datasets ready for language model training. It handles:
-
-- **Data Ingestion** - Load and normalize text from multiple sources
+- **Data Ingestion** - Load and normalize text. Initial low-cost filtering.
 - **Quality Filtering** - Language detection, PII handling, toxicity filtering
 - **Deduplication** - Exact and fuzzy duplicate removal using MinHash LSH
-- **Tokenization** - Fast BPE tokenization with tiktoken
-- **Export** - Training-ready formats (JSONL, Parquet)
+- **Tokenization** - Fast tokenization with tiktoken
+- **Export** - Training-ready format (single JSONL file by default, Parquet available for tokens)
 
 ### Key Features
 
-**Distributed Processing** - Scales horizontally with Ray  
+**Distributed Processing** - Distributed processing with Ray  
 **Production-Ready** - Containerized with Docker for reproducible runs  
 **Configurable** - YAML-based configuration for easy experimentation  
 **Efficient** - Vectorized operations with PyArrow for high throughput  
@@ -21,63 +19,98 @@ TokenTurbine is an end-to-end data preparation pipeline that transforms raw, noi
 
 ---
 
-## Quick Start
-
-### Prerequisites
+## Prerequisites
 
 - **Docker** 20.10+ and **Docker Compose** 2.0+ ([Install Docker](https://docs.docker.com/get-docker/))
-- At least **6GB RAM** and **10GB disk space**
-- Your input data: `data/raw/mainpipe_data_v1.jsonl`
+- At least **6GB RAM** and **1GB disk space** (or 3x input data size if using a different dataset).
 
-### Run in 3 Steps
+**Verify prerequisites**:
 
 ```bash
-# 1. Build the container
+docker --version           # Should be 20.10+
+docker-compose --version   # Should be 2.0+
+```
+
+---
+
+## Installation & Usage
+
+TokenTurbine offers **3 setup options** - choose the one that fits your workflow:
+
+Option 1: **Script-based** (Recommended)
+Option 2: **Makefile** 
+Option 3: **Manual Setup**
+
+### Option 1: use script download_data.sh
+```bash
+# 1. Clone the repository
+git clone https://github.com/EMventura/TokenTurbine.git 
+cd TokenTurbine
+
+# 2. Make download script executable
+chmod +x scripts/download_data.sh
+
+# 3. Run the download script
+./scripts/download_data.sh
+
+# 4. Build the Docker image
+docker-compose build
+
+# 5. Run the pipeline
+docker-compose up
+
+# 6. Access results
+ls -lh data/processed/cleaned_dataset.jsonl
+```
+
+### Option 2: Makefile
+
+```bash
+# 1. Clone the repository
+git clone 
+cd TokenTurbine
+
+# 2. Download data
+make download
+
+# 3. Build the container
 make build
 
-# 2. Run the pipeline
+# 4. Run the pipeline
 make run
 
-# 3. Access results
+# 5. Access results
+ls -lh data/processed/cleaned_dataset.jsonl
+```
+
+### Option 3: Manual download
+
+```bash
+# 1. Clone the repository
+git clone 
+cd TokenTurbine
+
+# 2. Create data directory
+mkdir -p data/raw
+
+# 3. Download the dataset manually
+curl -L "https://s3.us-east-1.amazonaws.com/mainpipe.maincode.com/mainpipe_data_v1.jsonl" \
+  -o data/raw/mainpipe_data_v1.jsonl
+
+# 4. Verify the download
+ls -lh data/raw/mainpipe_data_v1.jsonl
+
+# 5. Build the Docker image
+docker-compose build
+
+# 6. Run the pipeline
+docker-compose up
+
+# 7. Access results
 ls -lh data/processed/cleaned_dataset.jsonl
 ```
 
 **That's it!** Your cleaned dataset is ready at `data/processed/cleaned_dataset.jsonl`
-
----
-
-## Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/EMventura/TokenTurbine.git
-cd TokenTurbine
-
-# Build the Docker image (includes all dependencies)
-make build
-
-# Verify installation
-make validate
-```
-
----
-
-## Usage
-
-### Basic Usage
-
-```bash
-# Run with default configuration
-make run
-
-# Run with custom config
-docker-compose run --rm pipeline --config configs/custom.yaml
-
-# Run in background
-docker-compose up -d
-```
-
----
 
 ## Configuration
 
@@ -159,10 +192,11 @@ TokenTurbine/
 │       └── single_jsonl.py     # Export utilities
 ├── configs/
 │   └── base.yaml               # Default configuration
+├── scripts/                    # Helper scripts (For download data option 1)
+│   └── download_data.sh
 ├── data/
-│   ├── raw/                    # Input data (mount point)
-│   ├── processed/              # Output data (mount point)
-│   ├── checkpoints/            # Resume state (optional)
+│   ├── raw/                    # Input data 
+│   ├── processed/              # Output data
 │   └── reports/                # Metrics (future)
 ├── Dockerfile                  # Container definition
 ├── docker-compose.yml          # Container orchestration
@@ -177,36 +211,18 @@ TokenTurbine/
 
 | Command | Description |
 |---------|-------------|
+| `make download` | Download the input dataset |
 | `make build` | Build Docker image |
 | `make run` | Run pipeline with default config |
-| `make run-test` | Run with test sample |
-| `make dev` | Run in development mode (hot-reload) |
 | `make shell` | Open interactive shell in container |
 | `make logs` | View pipeline logs |
 | `make stop` | Stop running containers |
 | `make clean` | Remove containers and images |
+| `make clean-data` | RRemove all processed data |
 | `make validate` | Verify installation |
 
 Run `make help` to see all available commands.
 
----
-
-## Performance
-
-**Benchmark** (200K documents, ~270MB input):
-
-| Stage | Time | Throughput |
-|-------|------|------------|
-| Ingestion | ~1 min | 3,300 docs/sec |
-| Filtering | ~1.5 min | 2,200 docs/sec |
-| Deduplication | ~8 min | 330 docs/sec |
-| Export | ~8 min | 310 docs/sec |
-| **Total** | **~20 min** | **170 docs/sec** |
-
-**System:** 4 CPU cores, 6GB RAM  
-**Output:** 151K documents (75% retention rate)
-
----
 
 ## Troubleshooting
 
@@ -224,8 +240,19 @@ Run `make help` to see all available commands.
 **Issue:** Permission denied on data files  
 **Solution:** `chmod -R 755 data/` or run with your user: `docker-compose run --user $(id -u):$(id -g) pipeline`
 
-**Issue:** Ray initialization fails  
-**Solution:** Stop conflicting processes: `ray stop`, then increase `shm_size` in docker-compose.yml
+**Issue:** Data file not found (FileNotFoundError: data/raw/mainpipe_data_v1.jsonl)
+**Solution:** Download data file either manually, using the download_data.sh script or with make download
+
+**Issue:** Old containers interfering (ERROR: 'ContainerConfig')
+**Solution:** 
+```bash
+# Clean everything
+docker-compose down -v
+
+docker-compose build --no-cache
+
+docker-compose up
+```
 
 ---
 
@@ -244,6 +271,16 @@ vim configs/experiment_1.yaml
 
 # Run with custom config
 docker-compose run --rm pipeline --config configs/experiment_1.yaml
+
+```
+### Use your own data
+
+```bash
+# Copy your data file
+cp /path/to/your/data.jsonl data/raw/mainpipe_data_v1.jsonl
+
+# Run pipeline
+docker-compose up
 ```
 
 ## Output Format
@@ -267,51 +304,6 @@ Parquet files containing:
 - `token_count`: Number of tokens
 - `text`: Original text (optional)
 - `source`, `url`: Metadata
-
----
-
-## Architecture
-
-TokenTurbine uses a **streaming architecture** with Ray Data:
-
-```
-Input (JSONL)
-    ↓
-┌─────────────────┐
-│   Ingestion     │  → Parallel batches
-│  (Normalize)    │     Worker pool (4 actors)
-└────────┬────────┘
-         ↓
-┌─────────────────┐
-│   Filtering     │  → Parallel batches
-│ (Lang/PII/Tox)  │     Worker pool (4 actors)
-└────────┬────────┘
-         ↓
-┌─────────────────┐
-│  Exact Dedup    │  → Single actor (stateful)
-│   (Hash-based)  │     Global state
-└────────┬────────┘
-         ↓
-┌─────────────────┐
-│  Fuzzy Dedup    │  → Single actor (stateful)
-│  (MinHash LSH)  │     Global LSH index
-└────────┬────────┘
-         ↓
-┌─────────────────┐
-│   Export        │  → Parallel batches
-│    (JSONL)      │     Write shards
-└────────┬────────┘
-         ↓
-Output (Single JSONL)
-```
-
-**Key Design Principles:**
-- **Lazy Evaluation**: Ray only computes when output is requested
-- **Streaming**: No full dataset in memory (constant memory usage)
-- **Fault Tolerance**: Automatic retries on worker failures
-- **Observability**: Comprehensive logging at each stage
-
----
 
 ## License
 
