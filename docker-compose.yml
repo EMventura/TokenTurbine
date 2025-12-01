@@ -5,12 +5,14 @@ services:
     build: .
     container_name: tokenturbine_pipeline
     volumes:
-      # Mount your local 'data' folder to '/app/data' in the container
+      # Mount your local 'data/raw' folder to '/app/data/raw' in the container
       # This allows the container to read your inputs and write outputs to your disk
-      - ./data:/app/data
+      - ./data/raw:/app/data/raw
+      - ./data/processed:/app/data/processed
+      - ./data/processed/tokenized:/app/data/processed/tokenized
       - ./data/reports:/app/data/reports
     environment:
-      - RAY_ADDRESS=auto # or local?
+      - RAY_ADDRESS=local
       - PYTHONUNBUFFERED=1
 
     # Shared memory (important for Ray)

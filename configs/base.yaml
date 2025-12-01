@@ -105,8 +105,8 @@ tokenization:
   # 'gpt2' is the standard open source tokenizer. 
   # For newer models use 'cl100k_base' (GPT-4) or specific HF paths
   tokenizer_model: "gpt2"
-  # Setting this true for challenge requirement, otherwise set to false for production to save space
-  keep_text: false 
+  # Set to false to save space
+  keep_text: true 
   export_format: "parquet"
   output_path: "data/processed/tokenized"
   # Truncate docs longer than this (standard context window)

@@ -32,7 +32,7 @@ RUN mkdir -p data/ && \
     -O data/lid.176.bin
 
 # Create data directories with proper permissions
-RUN mkdir -p data/raw data/processed data/reports data/processed/tokenized \
+RUN mkdir -p data/raw data/processed data/reports data/processed/tokenized && \
     chmod -R 755 data/
 
 # Entrypoint
