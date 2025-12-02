@@ -15,7 +15,7 @@ class TokenizationWorker:
     """
     def __init__(self, config: Dict[str, Any]):
         self.model_name = config.get("tokenizer_model", "gpt2")
-        self.keep_text = config.get("keep_text", True)
+        self.keep_text = config.get("keep_text", False)
         self.add_special_tokens = config.get("add_special_tokens", False)
         self.max_length = config.get("max_length", None)  # For truncation
         self.tokenizer = None

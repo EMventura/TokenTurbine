@@ -18,7 +18,7 @@ system:
 # PIPELINE OPTIONS
 # -----------------------------------------------------------------------------
 # Enable counting between stages (set to false for very large datasets)
-compute_counts: true
+compute_counts: false
 
 # -----------------------------------------------------------------------------
 # DATA PATHS
@@ -106,7 +106,7 @@ tokenization:
   # For newer models use 'cl100k_base' (GPT-4) or specific HF paths
   tokenizer_model: "gpt2"
   # Set to false to save space
-  keep_text: true 
+  keep_text: false 
   export_format: "parquet"
   output_path: "data/processed/tokenized"
   # Truncate docs longer than this (standard context window)

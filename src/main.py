@@ -2,16 +2,16 @@ import argparse
 import logging
 import ray
 import sys
-import os
 import glob
+import os
 import shutil
 from data_load import IngestionStep
 from filtering import QualityFilterStep
 from deduplication import DeduplicationStep
 from tokenization import TokenizationStep
 from utils.config_loader import load_config
-from utils.single_jsonl import prepare_for_export
-
+from utils.helper import ensure_directory, compute_count_safe
+from utils.single_jsonl import prepare_for_export, consolidate_json_shards
 
 # Setup Logging
 logging.basicConfig(
@@ -22,50 +22,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger("TokenTurbine") 
 
-def ensure_directory(path: str):
-    """Ensure a directory exists, create if needed."""
-    os.makedirs(path, exist_ok=True)
-
-def consolidate_json_shards(temp_dir: str, output_path: str):
-    """
-    Consolidate Ray's sharded JSON output into a single JSONL file.
-    
-    Args:
-        temp_dir: Directory containing JSON shards
-        output_path: Desired output file path
-    """
-    json_files = sorted(glob.glob(os.path.join(temp_dir, "*.json")))
-    
-    if not json_files:
-        raise FileNotFoundError(f"No JSON files found in {temp_dir}")
-    
-    logger.info(f"Consolidating {len(json_files)} shard(s) into single file...")
-    
-    with open(output_path, 'w', encoding='utf-8') as outfile:
-        for json_file in json_files:
-            logger.debug(f"  Merging: {os.path.basename(json_file)}")
-            with open(json_file, 'r', encoding='utf-8') as infile:
-                for line in infile:
-                    outfile.write(line)
-    
-    logger.info(f"✅ Consolidated to: {output_path}")
-
-def compute_count_safe(ds: ray.data.Dataset, label: str = "dataset") -> int:
-    """
-    Safely compute dataset count with error handling.
-    
-    Returns count or -1 if counting fails.
-    """
-    try:
-        count = ds.count()
-        logger.info(f"{label}: {count:,} documents")
-        return count
-    except Exception as e:
-        logger.warning(f"Could not count {label}: {e}")
-        return -1
-
 def main(config_path: str):
-    # 2. Load Configuration (The Single Source of Truth)
+    # Load Configuration 
     try:
         config = load_config(config_path)
         logger.info(f"Configuration loaded from {config_path}")
@@ -76,7 +34,7 @@ def main(config_path: str):
         logger.critical(f"Failed to load config: {e}")
         return
 
-    # 3. Initialize Ray (Systems Level)
+    # Initialize Ray (Systems Level)
     # We pass the address from config if we want to connect to a cluster later
     ray_address = config['system'].get('ray_address', 'auto')
     if ray.is_initialized():
@@ -84,7 +42,7 @@ def main(config_path: str):
     
     try:
         ray.init(address=ray_address, ignore_reinit_error=True)
-        logger.info(f"✅ Ray initialized at {ray_address}")
+        logger.info(f"Ray initialized at {ray_address}")
     except Exception as e:
         logger.critical(f"Failed to initialize Ray: {e}")
         sys.exit(1)
@@ -105,20 +63,6 @@ def main(config_path: str):
                 logger.critical(f"Ingestion failed: {e}", exc_info=True)
                 sys.exit(1)
 
-        # Dependency Injection: We pass ONLY the 'ingestion' part of the config
-        #ingestion_conf = config['ingestion']
-        
-        #ingest_step = IngestionStep(ingestion_conf)
-        #dataset = ingest_step.run()
-
-        # Count INPUT (Optional, usually cheap for JSONL/Parquet metadata)
-        # If this is too slow on 10TB, we skip it and just use file size.
-        # try:
-        #     total_input_rows = dataset.count()
-        #     logger.info(f"Initial Input Rows: {total_input_rows:,}")
-        # except:
-        #     total_input_rows = None
-        
         if compute_counts:
             initial_count = compute_count_safe(dataset, "After ingestion")
 
@@ -193,39 +137,6 @@ def main(config_path: str):
                 shutil.rmtree(temp_output_dir)
                 logger.debug(f"Cleaned up temp directory: {temp_output_dir}")
 
-        # # This forces all data into one partition, creating a single output file
-        # logger.info("Repartitioning to single file...")
-        # export_ds_single = export_ds.repartition(1) 
-        
-        # # Write to temp directory (Ray creates shards)
-        # logger.info(f"Writing dataset...")
-        # os.makedirs(temp_output_dir, exist_ok=True)
-        # export_ds.write_json(temp_output_dir)
-
-        # Ray creates a file like: "data_0.json" in the temp directory
-        # Find and move it to the desired output path
-        # json_files = glob.glob(os.path.join(temp_output_dir, "*.json"))
-        
-        # if len(json_files) == 1:
-        #     # Move the single file to final location
-        #     shutil.move(json_files[0], output_path)
-        #     logger.info(f"✅ Single JSONL file created: {output_path}")
-        # elif len(json_files) > 1:
-        #     # Fallback: if somehow multiple files were created, consolidate
-        #     logger.warning(f"Expected 1 file but found {len(json_files)}, consolidating...")
-        #     with open(output_path, 'w', encoding='utf-8') as outfile:
-        #         for json_file in sorted(json_files):
-        #             with open(json_file, 'r', encoding='utf-8') as infile:
-        #                 for line in infile:
-        #                     outfile.write(line)
-        #     logger.info(f"✅ Consolidated to: {output_path}")
-        # else:
-        #     logger.error("No output files found!")
-        #     raise FileNotFoundError(f"No JSON files in {temp_output_dir}")
-        
-        # # Clean up temp directory
-        # shutil.rmtree(temp_output_dir)
-
         # ==========================================
         # STEP 5: TOKENIZATION 
         # ==========================================
@@ -252,7 +163,7 @@ def main(config_path: str):
         # FINAL REPORT 
         # ==========================================
         logger.info("\n" + "="*60)
-        logger.info("🎉 PIPELINE COMPLETE!")
+        logger.info("PIPELINE COMPLETE!")
         logger.info("="*60)
         logger.info(f"Status:           SUCCESS")
         logger.info(f"Output file:      {output_path}")
@@ -260,7 +171,7 @@ def main(config_path: str):
         
         if compute_counts:
             if 'initial_count' in locals() and initial_count > 0:
-                logger.info(f"Initial docs:     {initial_count:,}")
+                logger.info(f"After ingestion:     {initial_count:,}")
             if 'after_filter_count' in locals() and after_filter_count > 0:
                 logger.info(f"After filtering:  {after_filter_count:,}")
             if 'after_dedup_count' in locals() and after_dedup_count > 0:

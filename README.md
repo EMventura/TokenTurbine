@@ -37,9 +37,9 @@ docker-compose --version   # Should be 2.0+
 
 TokenTurbine offers **3 setup options** - choose the one that fits your workflow:
 
-Option 1: **Script-based** (Recommended)
-Option 2: **Makefile** 
-Option 3: **Manual Setup**
+- Option 1: **Script-based** (Recommended)
+- Option 2: **Makefile** 
+- Option 3: **Manual Setup**
 
 ### Option 1: use script download_data.sh
 ```bash
@@ -189,6 +189,7 @@ TokenTurbine/
 │   ├── tokenization.py         # Tokenization stage
 │   └── utils/
 │       ├── config_loader.py    # Config management
+│       ├── helper.py           # Helper functions
 │       └── single_jsonl.py     # Export utilities
 ├── configs/
 │   └── base.yaml               # Default configuration
@@ -198,6 +199,9 @@ TokenTurbine/
 │   ├── raw/                    # Input data 
 │   ├── processed/              # Output data
 │   └── reports/                # Metrics (future)
+├── notebooks                   # Jupyter notebooks for output analysis
+│   ├── read_input.ipynb        # Analysis of the raw dataset
+│   └──inspect_dataset.ipynb    # Analysis of the cleaned dataset
 ├── Dockerfile                  # Container definition
 ├── docker-compose.yml          # Container orchestration
 ├── requirements.txt            # Python dependencies
@@ -218,7 +222,7 @@ TokenTurbine/
 | `make logs` | View pipeline logs |
 | `make stop` | Stop running containers |
 | `make clean` | Remove containers and images |
-| `make clean-data` | RRemove all processed data |
+| `make clean-data` | Remove all processed data |
 | `make validate` | Verify installation |
 
 Run `make help` to see all available commands.
@@ -227,9 +231,6 @@ Run `make help` to see all available commands.
 ## Troubleshooting
 
 ### Common Issues
-
-**Issue:** Out of Memory errors  
-**Solution:** Increase Docker memory limit (Settings → Resources → Memory → 6GB+)
 
 **Issue:** Pipeline runs slowly  
 **Solution:** Reduce `batch_size` in config or increase CPU allocation
@@ -240,8 +241,8 @@ Run `make help` to see all available commands.
 **Issue:** Permission denied on data files  
 **Solution:** `chmod -R 755 data/` or run with your user: `docker-compose run --user $(id -u):$(id -g) pipeline`
 
-**Issue:** Data file not found (FileNotFoundError: data/raw/mainpipe_data_v1.jsonl)
-**Solution:** Download data file either manually, using the download_data.sh script or with make download
+**Issue:** Data file not found (FileNotFoundError: data/raw/mainpipe_data_v1.jsonl)  
+**Solution:** Download data file manually, using the download_data.sh script or with make download 
 
 **Issue:** Old containers interfering (ERROR: 'ContainerConfig')
 **Solution:** 

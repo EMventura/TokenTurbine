@@ -49,14 +49,6 @@ class IngestionWorker:
             r'\b(function|var|const|let|=>|console\.log|document\.getElementById|'
             r'window\.|return|import|export|class|def|printf|iostream)\b'
         )
-        # self.code_keyword_re = re.compile(
-        #     r'\b(function|var|const|let|=>|def|class|import|export|return|'
-        #     r'if|else|elif|for|while|switch|case|break|continue|'
-        #     r'try|catch|except|finally|raise|throw|async|await|yield|'
-        #     r'console\.log|print\(|printf|iostream|include|namespace|'
-        #     r'static|void|int|float|double|'
-        #     r'string|bool|True|False|None|null|undefined)\b'
-        # )
         self.symbol_density_re = re.compile(r'[\{\}\(\);=<>]')
 
         # Statistics
@@ -196,7 +188,7 @@ class IngestionWorker:
                 self.filter_reasons['too_short'] += 1
                 continue
             
-            # Code/Garbage check 
+            # Code check 
             if self.filter_code and self._is_code_like(text):
                 self.docs_filtered += 1
                 self.filter_reasons['code_like'] += 1

@@ -31,11 +31,6 @@ class FastTextPredictor:
         self.email_re = re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b')
         # IPv4: Simple octet check
         self.ip_re = re.compile(r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b')
-        # # IPv4: Validate octets are 0-255
-        # self.ip_re = re.compile(
-        #     r'\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}'
-        #     r'(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b'
-        # )
         # Phone: US/International formats (simple heuristic)
         self.phone_re = re.compile(r'\b(?:\+\d{1,2}\s)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}\b')
 
@@ -116,12 +111,9 @@ class FastTextPredictor:
             sample = self._smart_sample(t, self.sample_chars)
             # Normalize whitespace for model
             sample = sample.replace("\n", " ").replace("\r", " ")
-            sample = re.sub(r'\s+', ' ', sample).strip() #are you sure about this line?
+            sample = re.sub(r'\s+', ' ', sample).strip() 
             cleaned_for_model.append(sample)
-            # t_clean = t.replace("\n", " ").replace("\r", " ")
-            # t_clean = t_clean[:self.sample_chars] 
-            # cleaned_for_model.append(t_clean)
-        
+            
         # k=1 returns the top language guess
         try:
             labels, scores = self.model.predict(cleaned_for_model, k=1)
@@ -212,20 +204,7 @@ class FastTextPredictor:
             punc_ratios.append(punc_ratio)
         
         return pa.array(punc_ratios, type=pa.float64())
-        # # Total length
-        # total_len = pc.utf8_length(text_array)
     
-        # # Count alphanumeric + spaces using regex
-        # alphanum_pattern = r'[a-zA-Z0-9\s]'
-        # alphanum_matches = pc.count_substring_regex(text_array, alphanum_pattern)
-    
-        # # Ratio = (total - alphanum) / total
-        # punc_count = pc.subtract(total_len, alphanum_matches)
-        # ratios = pc.divide(pc.cast(punc_count, pa.float64()), 
-        #                    pc.cast(total_len, pa.float64()))
-    
-        # return ratios
-
     def __call__(self, batch: pa.Table) -> pa.Table:
         """
         Ray calls this method for every batch.
@@ -256,8 +235,6 @@ class FastTextPredictor:
         
         if len(batch) == 0:
             self.docs_processed += initial_rows
-            # self.docs_filtered += initial_rows
-            # self.filter_reasons['language'] += initial_rows
             return batch.drop(['lang_label', 'lang_score'])
 
         # --- 2. Content Safety (PII & Toxicity) ---
@@ -298,8 +275,6 @@ class FastTextPredictor:
         
         # Replace the 'text' column with the Redacted version
         # (PyArrow tables are immutable, so we drop and append, or replace)
-        # Easiest way in Ray 2.x is often to rebuild or use set_column (if available)
-        # We'll just reconstruct for safety
         batch = batch.drop(["text"])
         batch = batch.append_column("text", pa.array(safe_texts, type=pa.string()))
 
@@ -329,14 +304,6 @@ class FastTextPredictor:
                 f"PII found: {self.pii_found_count}"
             )
 
-        # final_rows = len(batch)
-        # dropped = initial_rows - final_rows
-
-        # OBSERVABILITY: Log the drop rate for this specific batch
-        # We use debug so we don't spam production logs, but can turn it on if needed
-        # if dropped > 0:
-        #     logger.debug(f"Worker stats: {initial_rows} -> {final_rows} ({dropped} dropped)")
-
         # Cleanup
         return batch.drop(['lang_label', 'lang_score', 'punc_ratio'])
 
@@ -351,9 +318,6 @@ class QualityFilterStep:
     def run(self, ds: ray.data.Dataset) -> ray.data.Dataset:
         logger.info("Configuring Language, PII & Toxicity Filtering...")
     
-        # KEY CHANGE HERE:
-        # 1. We pass the CLASS (FastTextPredictor), not the instance.
-        # 2. We pass config via fn_constructor_args so Ray can init the class on workers.
         filtered_ds = ds.map_batches(
             FastTextPredictor, 
             batch_format="pyarrow",
