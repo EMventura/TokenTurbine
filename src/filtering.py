@@ -51,18 +51,6 @@ class FastTextPredictor:
         else:
             self.toxicity_re = None
 
-        # Statistics
-        self.docs_processed = 0
-        self.docs_filtered = 0
-        self.filter_reasons = {
-            'language': 0,
-            'toxicity': 0,
-            'pii_dropped': 0,
-            'quality': 0
-        }
-        self.pii_found_count = 0
-
-
     def _load_model(self):
         """Lazy loading of the FastText model on the worker node."""
         if self.model is None:
@@ -227,14 +215,9 @@ class FastTextPredictor:
         is_confident = pc.greater(batch['lang_score'], self.min_lang_score)
         keep_mask = pc.and_(is_target, is_confident)
 
-        lang_filtered = initial_rows - pc.sum(pc.cast(keep_mask, pa.int64())).as_py()
-        self.filter_reasons['language'] += lang_filtered
-        self.docs_filtered += lang_filtered
-
         batch = batch.filter(keep_mask)
         
         if len(batch) == 0:
-            self.docs_processed += initial_rows
             return batch.drop(['lang_label', 'lang_score'])
 
         # --- 2. Content Safety (PII & Toxicity) ---
@@ -246,21 +229,15 @@ class FastTextPredictor:
         valid_indices = []
         
         for i, text in enumerate(texts):
-            self.docs_processed += 1
             # A. Toxicity Check (Drop immediately)
             if self.enable_toxicity and self._check_toxicity(text):
-                self.docs_filtered += 1
-                self.filter_reasons['toxicity'] += 1
                 continue # Drop toxic docs
                 
             # B. PII Handling
             if self.enable_pii:
                 text, found_pii = self._handle_pii(text)
                 if found_pii:
-                    self.pii_found_count += 1
                     if self.pii_action == "drop":
-                        self.docs_filtered += 1
-                        self.filter_reasons['pii_dropped'] += 1
                         continue # Drop PII docs if configured
             
             safe_texts.append(text)
@@ -288,21 +265,6 @@ class FastTextPredictor:
         quality_mask = pc.less_equal(batch['punc_ratio'], self.max_punc_ratio)
         quality_filtered = len(batch) - pc.sum(pc.cast(quality_mask, pa.int64())).as_py()
         batch = batch.filter(quality_mask)
-
-        self.filter_reasons['quality'] += quality_filtered
-        self.docs_filtered += quality_filtered
-
-        # Periodic logging
-        if self.docs_processed % 10000 == 0:
-            filter_rate = (self.docs_filtered / self.docs_processed * 100) if self.docs_processed > 0 else 0
-            logger.info(
-                f"Filtering progress: {self.docs_processed:,} processed, "
-                f"{self.docs_filtered:,} filtered ({filter_rate:.1f}%) - "
-                f"lang: {self.filter_reasons['language']}, "
-                f"toxic: {self.filter_reasons['toxicity']}, "
-                f"quality: {self.filter_reasons['quality']}, "
-                f"PII found: {self.pii_found_count}"
-            )
 
         # Cleanup
         return batch.drop(['lang_label', 'lang_score', 'punc_ratio'])
