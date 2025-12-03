@@ -337,6 +337,18 @@ Parquet files containing:
 - `text`: Original text (optional)
 - `source`, `url`: Metadata
 
+### Metric Plots (`reports/plots/*.png`)
+
+Plots include (generated using `notebooks/inspect_dataset.ipynb`):
+- `Char_Words_Dist.png`: Histogram of lengths
+- `Dedup_Check.png`: Unique vs duplicate docs
+- `Integrity_Check.png`: Docs with artifacts
+- `Language_Check.png`: English vs Non-English docs
+- `Perplexity_Check.png`: Perplexity scores
+- `PII_Check.png`: PII docs
+- `pipeline_steps.png`: Metadata
+- `Toxicity_Check.png`: Toxic docs
+
 ---
 
 ## License
