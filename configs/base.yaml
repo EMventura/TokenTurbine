@@ -32,9 +32,6 @@ paths:
 
   # Where intermediate Ray checkpoints or Parquet files go
   processed_dir: "data/processed/tokenized/"
-  
-  # Where the final inspection reports (histograms, logs) go
-  reports_dir: "data/reports/"
 
 # -----------------------------------------------------------------------------
 # PIPELINE STEPS
@@ -101,11 +98,11 @@ deduplication:
   
 # STEP 4: TOKENIZATION 
 tokenization:
-  enabled: false
+  enabled: true
   # 'gpt2' is the standard open source tokenizer. 
   # For newer models use 'cl100k_base' (GPT-4) or specific HF paths
   tokenizer_model: "gpt2"
-  # Setting this true for challenge requirement, otherwise set to false for production to save space
+  # Set to false to save space
   keep_text: false 
   export_format: "parquet"
   output_path: "data/processed/tokenized"

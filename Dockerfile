@@ -13,7 +13,6 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     wget \
-    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
@@ -32,18 +31,11 @@ RUN mkdir -p data/ && \
     wget -q https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.bin \
     -O data/lid.176.bin
 
-# Set proper permissions for data directory
-RUN chmod -R 755 data/
+# Create data directories with proper permissions
+RUN mkdir -p data/raw data/processed data/processed/tokenized && \
+    chmod -R 755 data/
 
-# Create data directories to avoid permission issues
-RUN mkdir -p data/raw data/processed data/reports data/processed/tokenized
-
-# Download the raw data file and place it in the data/raw directory.
-RUN echo "Downloading raw data..." && \
-    curl -L "https://s3.us-east-1.amazonaws.com/mainpipe.maincode.com/mainpipe_data_v1.jsonl" -o data/raw/mainpipe_data_v1.jsonl && \
-    echo "Download complete."
-
-# Default command
+# Entrypoint
 ENTRYPOINT ["python", "src/main.py"]
 
 # Default command (can be overridden)

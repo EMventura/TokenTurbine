@@ -37,8 +37,6 @@ class IngestionWorker:
         self.min_text_length = config.get("min_text_length", 100)
         self.normalize_text = config.get("normalize_text", True)
         self.source_name = config.get("source_name", "unknown")
-        
-        # Heuristics Config
         self.filter_code = config.get("filter_code", True)
         
         # Compile regexes for performance
@@ -49,23 +47,7 @@ class IngestionWorker:
             r'\b(function|var|const|let|=>|console\.log|document\.getElementById|'
             r'window\.|return|import|export|class|def|printf|iostream)\b'
         )
-        # self.code_keyword_re = re.compile(
-        #     r'\b(function|var|const|let|=>|def|class|import|export|return|'
-        #     r'if|else|elif|for|while|switch|case|break|continue|'
-        #     r'try|catch|except|finally|raise|throw|async|await|yield|'
-        #     r'console\.log|print\(|printf|iostream|include|namespace|'
-        #     r'static|void|int|float|double|'
-        #     r'string|bool|True|False|None|null|undefined)\b'
-        # )
         self.symbol_density_re = re.compile(r'[\{\}\(\);=<>]')
-
-        # Statistics
-        self.docs_processed = 0
-        self.docs_filtered = 0
-        self.filter_reasons = {
-            'too_short': 0,
-            'code_like': 0
-        }
 
     def _get_output_schema(self) -> pa.Schema:
         return pa.schema([
@@ -104,12 +86,10 @@ class IngestionWorker:
 
         # 2. Symbol Density Check (Code uses lots of { } ; = )
         # Calculate ratio of code-symbols to total length
-        # A typical English sentence has very few of these. Code has many.
         symbol_count = len(self.symbol_density_re.findall(text))
         ratio = symbol_count / len(text)
         
         # Threshold: If > 5% of characters are code syntax, drop it.
-        # (Normal text is usually < 1%)
         if ratio > 0.05: 
             return True
             
@@ -188,32 +168,16 @@ class IngestionWorker:
         
         for i, text in enumerate(cleaned_texts):
 
-            self.docs_processed += 1
-
             # Length check
             if not text or len(text) < self.min_text_length:
-                self.docs_filtered += 1
-                self.filter_reasons['too_short'] += 1
                 continue
             
-            # Code/Garbage check 
+            # Code check 
             if self.filter_code and self._is_code_like(text):
-                self.docs_filtered += 1
-                self.filter_reasons['code_like'] += 1
                 continue
                 
             valid_indices.append(i)
             final_texts.append(text)
-
-        # Periodic logging
-        if self.docs_processed % 10000 == 0:
-            filter_rate = (self.docs_filtered / self.docs_processed * 100) if self.docs_processed > 0 else 0
-            logger.info(
-                f"Ingestion progress: {self.docs_processed:,} processed, "
-                f"{self.docs_filtered:,} filtered ({filter_rate:.1f}%) - "
-                f"too_short: {self.filter_reasons['too_short']}, "
-                f"code_like: {self.filter_reasons['code_like']}"
-            )
             
         if not final_texts:
             return self._empty_table()
