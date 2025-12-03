@@ -26,7 +26,7 @@ def consolidate_json_shards(temp_dir: str, output_path: str):
                 for line in infile:
                     outfile.write(line)
     
-    logger.info(f"✅ Consolidated to: {output_path}")
+    logger.info(f"Consolidated to: {output_path}")
 
 
 def prepare_for_export(batch):

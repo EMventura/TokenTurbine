@@ -81,7 +81,7 @@ clean-data:
 	@echo "WARNING: This will delete all processed data!"
 	@read -p "Are you sure? (yes/no): " confirm; \
 	if [ "$$confirm" = "yes" ]; then \
-		rm -rf data/processed/* data/reports/* data/checkpoints/*; \
+		rm -rf data/processed/* data/checkpoints/*; \
 		echo "Data cleaned."; \
 	else \
 		echo "Cancelled."; \

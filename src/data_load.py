@@ -37,8 +37,6 @@ class IngestionWorker:
         self.min_text_length = config.get("min_text_length", 100)
         self.normalize_text = config.get("normalize_text", True)
         self.source_name = config.get("source_name", "unknown")
-        
-        # Heuristics Config
         self.filter_code = config.get("filter_code", True)
         
         # Compile regexes for performance
@@ -88,12 +86,10 @@ class IngestionWorker:
 
         # 2. Symbol Density Check (Code uses lots of { } ; = )
         # Calculate ratio of code-symbols to total length
-        # A typical English sentence has very few of these. Code has many.
         symbol_count = len(self.symbol_density_re.findall(text))
         ratio = symbol_count / len(text)
         
         # Threshold: If > 5% of characters are code syntax, drop it.
-        # (Normal text is usually < 1%)
         if ratio > 0.05: 
             return True
             

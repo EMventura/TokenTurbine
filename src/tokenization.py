@@ -17,7 +17,7 @@ class TokenizationWorker:
         self.model_name = config.get("tokenizer_model", "gpt2")
         self.keep_text = config.get("keep_text", False)
         self.add_special_tokens = config.get("add_special_tokens", False)
-        self.max_length = config.get("max_length", None)  # For truncation
+        self.max_length = config.get("max_length", None)  
         self.tokenizer = None
 
     def _get_tokenizer(self):
@@ -87,7 +87,7 @@ class TokenizationWorker:
         # Build output table
         output_dict = {
             'doc_id': batch['doc_id'],
-            # pa.list_ handles jagged arrays perfectly
+            # pa.list_ to handles jagged arrays
             'input_ids': pa.array(all_token_ids, type=pa.list_(pa.int64())),
             'token_count': pa.array(all_token_counts, type=pa.int64()),
         }
@@ -160,19 +160,17 @@ class TokenizationStep:
         
         # 2. Write to Disk (Sharded)
         # Ray automatically splits the data into multiple files (shards) based on blocks.
-        # We use Snappy compression which is the industry standard for Parquet/ML.
+        # We use Snappy compression which is the standard for Parquet/ML.
         try:
             if self.export_format == "jsonl":
                 logger.info(f"Writing JSONL to {target_path}...")
-                # ray.data.write_json handles the newline delimiting automatically
                 tokenized_ds.write_json(target_path, force_ascii=False)
             else:
                 logger.info(f"Writing Parquet files to {target_path}...")
                 tokenized_ds.write_parquet(target_path, compression="snappy")
 
-            # Read back purely for verification/stats (lazy read)
-            # In a real 10TB run, you might skip this or rely on write logs.
-            logger.info(f"✅ Tokenization complete! Data saved to {target_path}")
+            # Read back for verification/stats 
+            logger.info(f"Tokenization complete! Data saved to {target_path}")
 
         except Exception as e:
             logger.error(f"Failed to write tokenized data: {e}")

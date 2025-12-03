@@ -18,7 +18,7 @@ system:
 # PIPELINE OPTIONS
 # -----------------------------------------------------------------------------
 # Enable counting between stages (set to false for very large datasets)
-compute_counts: false
+compute_counts: true
 
 # -----------------------------------------------------------------------------
 # DATA PATHS
@@ -32,9 +32,6 @@ paths:
 
   # Where intermediate Ray checkpoints or Parquet files go
   processed_dir: "data/processed/tokenized/"
-  
-  # Where the final inspection reports (histograms, logs) go
-  reports_dir: "data/reports/"
 
 # -----------------------------------------------------------------------------
 # PIPELINE STEPS
@@ -101,7 +98,7 @@ deduplication:
   
 # STEP 4: TOKENIZATION 
 tokenization:
-  enabled: false
+  enabled: true
   # 'gpt2' is the standard open source tokenizer. 
   # For newer models use 'cl100k_base' (GPT-4) or specific HF paths
   tokenizer_model: "gpt2"

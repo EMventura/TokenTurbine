@@ -6,7 +6,6 @@ def load_config(config_path: str = "configs/base.yaml") -> Dict[str, Any]:
     """
     Loads YAML config and ensures paths are absolute relative to project root.
     """
-    # Find the project root
     project_root = Path(__file__).parent.parent.parent
     
     full_path = project_root / config_path

@@ -34,7 +34,7 @@ def main(config_path: str):
         logger.critical(f"Failed to load config: {e}")
         return
 
-    # Initialize Ray (Systems Level)
+    # Initialize Ray 
     # We pass the address from config if we want to connect to a cluster later
     ray_address = config['system'].get('ray_address', 'auto')
     if ray.is_initialized():
@@ -67,7 +67,7 @@ def main(config_path: str):
             initial_count = compute_count_safe(dataset, "After ingestion")
 
         # ==========================================
-        # STEP 2: LANGUAGE & QUALITY FILTERING (The Funnel)
+        # STEP 2: LANGUAGE & QUALITY FILTERING 
         # ==========================================
         if config['filtering']['enabled']:
             logger.info("="*60)
@@ -152,7 +152,6 @@ def main(config_path: str):
                 shutil.rmtree(tokenization_dir)
             
             # Run Tokenization (Writes to disk)
-            # Note: We capture the returned DS, but the heavy work happens during write
             try:
                 TokenizationStep(config['tokenization']).run(dataset, tokenization_dir)
             except Exception as e:
@@ -171,7 +170,7 @@ def main(config_path: str):
         
         if compute_counts:
             if 'initial_count' in locals() and initial_count > 0:
-                logger.info(f"After ingestion:     {initial_count:,}")
+                logger.info(f"After ingestion:  {initial_count:,}")
             if 'after_filter_count' in locals() and after_filter_count > 0:
                 logger.info(f"After filtering:  {after_filter_count:,}")
             if 'after_dedup_count' in locals() and after_dedup_count > 0:
@@ -186,7 +185,7 @@ def main(config_path: str):
         logger.info("="*60)
         
     except KeyboardInterrupt:
-        logger.warning("\n⚠️  Pipeline interrupted by user")
+        logger.warning("\n Pipeline interrupted by user")
         sys.exit(130)
     except Exception as e:
         logger.critical(f"Pipeline execution failed: {e}", exc_info=True)

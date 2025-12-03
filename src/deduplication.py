@@ -31,8 +31,6 @@ class MinHashDeduplicator:
         
         # Statistics
         self.total_processed = 0
-        self.duplicates_found = 0
-        self.empty_shingles = 0
         
         logger.info(
             f"MinHash LSH initialized: num_perm={self.num_perm}, "
@@ -91,7 +89,6 @@ class MinHashDeduplicator:
             
             # Handle empty shingles
             if not shingles:
-                self.empty_shingles += 1
                 docs_to_keep.append(doc_id)  # Keep documents with no shingles
                 continue
             
@@ -106,25 +103,6 @@ class MinHashDeduplicator:
                 self.lsh.insert(doc_id, m)
                 self.seen_docs.add(doc_id)
                 docs_to_keep.append(doc_id)
-            else:
-                # Duplicate found
-                self.duplicates_found += 1
-                
-                # Log first few duplicates for inspection
-                if self.duplicates_found <= 5:
-                    logger.info(
-                        f"Duplicate found: doc_id={doc_id[:16]}... "
-                        f"similar to {similar_docs[0][:16]}..."
-                    )
-            
-            # Periodic statistics logging
-            if self.total_processed % 10000 == 0:
-                dup_rate = (self.duplicates_found / self.total_processed * 100)
-                logger.info(
-                    f"LSH Progress: {self.total_processed:,} docs processed, "
-                    f"{self.duplicates_found:,} duplicates found ({dup_rate:.1f}%), "
-                    f"{len(self.seen_docs):,} unique docs in index"
-                )
         
         # Filter batch to keep only non-duplicate documents
         if not docs_to_keep:
@@ -143,8 +121,7 @@ class ExactDeduplicator:
     def __init__(self):
         self.seen_ids = set()
         self.total_processed = 0
-        self.duplicates_found = 0
-    
+        
     def __call__(self, batch: pa.Table) -> pa.Table:
         """
         Filter out documents with doc_ids we've already seen.
@@ -162,20 +139,10 @@ class ExactDeduplicator:
             if doc_id not in self.seen_ids:
                 self.seen_ids.add(doc_id)
                 new_doc_ids.append(doc_id)
-            else:
-                self.duplicates_found += 1
             
-            # Periodic logging
-            if self.total_processed % 10000 == 0:
-                dup_rate = (self.duplicates_found / self.total_processed * 100)
-                logger.info(
-                    f"Exact dedup progress: {self.total_processed:,} processed, "
-                    f"{self.duplicates_found:,} exact duplicates ({dup_rate:.1f}%)"
-                )
-        
         # Filter batch to keep only new documents
         if not new_doc_ids:
-            return batch.slice(0, 0)  # Empty batch with schema
+            return batch.slice(0, 0)  
         
         keep_mask = pc.is_in(batch['doc_id'], pa.array(new_doc_ids))
         return batch.filter(keep_mask)
@@ -215,7 +182,6 @@ class DeduplicationStep:
         Since doc_id is xxhash of text, identical texts have same ID.
         """
         logger.info("Stage 1: Exact deduplication...")
-        #initial = ds.count()
         
         # Use map_batches with a stateful actor
         # Single actor maintains a set of seen doc_ids across all batches
@@ -245,7 +211,7 @@ class DeduplicationStep:
             fn_constructor_args=[self.config],
             compute=ray.data.ActorPoolStrategy(
                 min_size=1,
-                max_size=1  # Single actor for global LSH
+                max_size=1 
             )
         )
         

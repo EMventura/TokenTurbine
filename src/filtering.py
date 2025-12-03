@@ -31,7 +31,7 @@ class FastTextPredictor:
         self.email_re = re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b')
         # IPv4: Simple octet check
         self.ip_re = re.compile(r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b')
-        # Phone: US/International formats (simple heuristic)
+        # Phone: US/International formats 
         self.phone_re = re.compile(r'\b(?:\+\d{1,2}\s)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}\b')
 
         # Toxicity: Focus on hate speech and slurs rather than all profanity
@@ -42,7 +42,6 @@ class FastTextPredictor:
         ])
 
         # Pre-compile regex for all toxic words: \b(bad1|bad2|bad3)\b
-        # This is O(1) compared to iterating the list
         if toxic_words:
             self.toxicity_re = re.compile(
                 r'\b(' + '|'.join(map(re.escape, toxic_words)) + r')\b', 
@@ -89,9 +88,8 @@ class FastTextPredictor:
         """
         self._load_model()
         
-        # OPTIMIZATION: Model-Specific Normalization
-        # We clean the text ONLY for the model's eyes. 
-        # We do NOT overwrite the actual dataframe column yet.
+        # We clean the text only for the model's eyes. 
+        # We do not overwrite the actual dataframe column yet.
 
         cleaned_for_model = []
         for t in texts:
@@ -149,7 +147,7 @@ class FastTextPredictor:
         if not self.toxicity_re:
             return False
 
-        # Optimization: If threshold is 0 (Zero Tolerance), use search (Fastest)
+        # If threshold is 0, use search (Fastest)
         if self.max_toxic_ratio <= 0.0:
             return bool(self.toxicity_re.search(text))
             
@@ -158,7 +156,7 @@ class FastTextPredictor:
         if not matches:
             return False
             
-        # Approximate word count (splitting is fast enough for single doc)
+        # Approximate word count 
         # We use a simple split to approximate total tokens
         word_count = len(text.split())
         if word_count == 0:
@@ -179,7 +177,6 @@ class FastTextPredictor:
         3. Computing ratio = (total - alphanum - spaces) / total
         """
     
-        # Total character count
         texts = text_array.to_pylist()
         
         punc_ratios = []
@@ -200,17 +197,17 @@ class FastTextPredictor:
         if 'text' not in batch.column_names or len(batch) == 0:
             return batch
 
-        initial_rows = len(batch) # Track input size
+        initial_rows = len(batch) 
 
-        # 1. Language Identification
+        # Language Identification
         texts = batch['text'].to_pylist()
         labels, scores = self._predict_language(texts)
         
-        # 2. Add temporary columns
+        # Add temporary columns
         batch = batch.append_column("lang_label", pa.array(labels, type=pa.string()))
         batch = batch.append_column("lang_score", pa.array(scores, type=pa.float64()))
         
-        # 3. Filter by Language
+        # Filter by Language
         is_target = pc.equal(batch['lang_label'], self.target_lang)
         is_confident = pc.greater(batch['lang_score'], self.min_lang_score)
         keep_mask = pc.and_(is_target, is_confident)
@@ -220,20 +217,19 @@ class FastTextPredictor:
         if len(batch) == 0:
             return batch.drop(['lang_label', 'lang_score'])
 
-        # --- 2. Content Safety (PII & Toxicity) ---
-        # We must switch to Python loop for Regex logic
-        # (PyArrow regex is limited for replacement/complex search)
+        # Content Safety (PII & Toxicity) 
+        # Switch to Python loop for Regex logic
         
         texts = batch['text'].to_pylist()
         safe_texts = []
         valid_indices = []
         
         for i, text in enumerate(texts):
-            # A. Toxicity Check (Drop immediately)
+            # Toxicity Check (Drop immediately)
             if self.enable_toxicity and self._check_toxicity(text):
                 continue # Drop toxic docs
                 
-            # B. PII Handling
+            # PII Handling
             if self.enable_pii:
                 text, found_pii = self._handle_pii(text)
                 if found_pii:
@@ -255,10 +251,7 @@ class FastTextPredictor:
         batch = batch.drop(["text"])
         batch = batch.append_column("text", pa.array(safe_texts, type=pa.string()))
 
-        # --- 3. Quality Heuristics (Punctuation) ---
-        # Calculate on the NEW (redacted) text
-
-        # 4. Quality filter
+        # Quality Heuristics (Punctuation) ---
         punc_ratios = self._compute_punc_ratio(batch['text'])
         batch = batch.append_column("punc_ratio", punc_ratios)
         

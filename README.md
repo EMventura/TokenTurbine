@@ -112,6 +112,8 @@ ls -lh data/processed/cleaned_dataset.jsonl
 
 **That's it!** Your cleaned dataset is ready at `data/processed/cleaned_dataset.jsonl`
 
+---
+
 ## Configuration
 
 Edit `configs/base.yaml` to customize the pipeline:
@@ -195,10 +197,21 @@ TokenTurbine/
 │   └── base.yaml               # Default configuration
 ├── scripts/                    # Helper scripts (For download data option 1)
 │   └── download_data.sh
+├── reports/                    # Final report and metric plots
+│   ├── report_mainpipe.pdf     # Final report
+│   └── plots/                  # Metric plots
+│       ├── Char_Words_Dist.png    
+│       ├── Dedup_Check.png           
+│       ├── Integrity_Check.png    
+│       ├── Language_Check.png          
+│       ├── Perplexity_Dist.png    
+│       ├── PII_Check.png
+│       ├── pipeline_steps.png          
+│       └── Toxicity_Check.png     
 ├── data/
 │   ├── raw/                    # Input data 
-│   ├── processed/              # Output data
-│   └── reports/                # Metrics (future)
+│   └── processed/              # Output data (cleaned non-tokenized dataset)
+│       └── tokenized/          # Tokenized files
 ├── notebooks                   # Jupyter notebooks for output analysis
 │   ├── read_input.ipynb        # Analysis of the raw dataset
 │   └──inspect_dataset.ipynb    # Analysis of the cleaned dataset
@@ -227,6 +240,22 @@ TokenTurbine/
 
 Run `make help` to see all available commands.
 
+---
+
+## Performance
+
+### System: 4 CPU cores, 8GB RAM
+
+| Stage | Time (with compute_counts) | Time (no compute_counts) |
+|-------|------|------------|
+| Ingestion | ~2 min | <5 sec |
+| Filtering | ~2 min | <5 sec |
+| Deduplication | ~8 min  | <5 sec |
+| Export | ~8 min | ~8 min |
+| Tokenization | ~8 min | ~8 min |
+| **Total** | **~28 min** | **~17 min** |
+
+---
 
 ## Troubleshooting
 
@@ -284,6 +313,8 @@ cp /path/to/your/data.jsonl data/raw/mainpipe_data_v1.jsonl
 docker-compose up
 ```
 
+---
+
 ## Output Format
 
 ### Cleaned Dataset (`data/processed/cleaned_dataset.jsonl`)
@@ -305,6 +336,8 @@ Parquet files containing:
 - `token_count`: Number of tokens
 - `text`: Original text (optional)
 - `source`, `url`: Metadata
+
+---
 
 ## License
 
@@ -331,20 +364,12 @@ For questions or issues:
 
 ---
 
-## Roadmap
-
 ### Current Version (v1.0)
 - Basic pipeline (ingestion, filtering, dedup, tokenization)
 - Docker containerization
 - Configuration system
 - Quality filters (language, PII, toxicity)
 - MinHash LSH deduplication
-
-### Future Enhancements
-- [ ] Inspectability dashboard (metrics, histograms)
-- [ ] Multi-node Ray cluster support
-- [ ] Advanced quality filters (perplexity, document structure)
-- [ ] Data mixing and sampling strategies
-- [ ] Resume from failures (robust checkpointing)
+- Inspectability dashboard (metrics, histograms)
 
 ---

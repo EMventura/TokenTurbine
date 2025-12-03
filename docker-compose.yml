@@ -7,7 +7,6 @@ services:
     volumes:
       - ./data/raw:/app/data/raw
       - ./data/processed:/app/data/processed
-      - ./data/reports:/app/data/reports
     environment:
       - RAY_ADDRESS=local
       - PYTHONUNBUFFERED=1
