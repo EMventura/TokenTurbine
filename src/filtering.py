@@ -169,7 +169,7 @@ class FastTextPredictor:
 
     def _compute_punc_ratio(self, text_array: pa.Array) -> pa.Array:
         """
-        Vectorized punctuation ratio calculation using PyArrow.
+        Punctuation ratio calculation.
         Ratio = (Non-AlphaNumeric Chars) / (Total Chars)
         This approximates the ratio by:
         1. Counting total characters (utf8_length)
